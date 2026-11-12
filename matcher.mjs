@@ -3,19 +3,30 @@ export function normName(name) {
   return String(name ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US');
 }
 
-const ALOLAN = new Set(['Raichu', 'Meowth', 'Persian', 'Marowak']);
-export function displayName(member) {
-  if (!member) return '';
-  const name=String(member.name||'');
-  return ALOLAN.has(name) && String(member.form||'').endsWith('-a') ? `Alolan ${name}` : name;
+// Serebii's sprite suffix is not always a regional form: e.g. Rotom-h is
+// Heat Rotom, and Vivillon-g is a pattern. Whitelist actual regional species.
+const REGIONAL={
+  a:{label:'Alolan',species:new Set(['Raichu','Meowth','Persian','Marowak'])},
+  g:{label:'Galarian',species:new Set(["Farfetch'd",'Meowth','Mr. Mime','Slowbro','Slowking','Slowpoke','Stunfisk','Yamask'])},
+  h:{label:'Hisuian',species:new Set(['Avalugg','Goodra','Qwilfish','Sliggoo'])}
+};
+function region(member){
+  const suffix=String(member?.form||'').split('-').at(-1);
+  const r=REGIONAL[suffix];
+  return r?.species.has(member?.name)?r.label:'';
 }
-export function matchesMember(member, requested) {
+export function displayName(member) {
+  if(!member)return '';
+  const prefix=region(member);
+  return prefix?`${prefix} ${member.name}`:String(member.name||'');
+}
+export function matchesMember(member,requested){
   const query=normName(requested);
-  if (!query) return false;
-  // A plain species name intentionally includes all forms; an explicit regional
-  // form must match that form specifically, never an ordinary version.
-  return query===normName(member.name) || query===normName(displayName(member)) ||
-    (query===normName(`${member.name} (Alolan)`) && normName(displayName(member))===normName(`Alolan ${member.name}`));
+  if(!query)return false;
+  // A bare species name intentionally includes all forms. Explicit regional
+  // names match only their own suffix, not standard or other regional forms.
+  return query===normName(member.name)||query===normName(displayName(member))||
+    Boolean(region(member)&&query===normName(`${member.name} (${region(member)})`));
 }
 
 // Strong match: each preview belongs to a different independently defined group.
@@ -83,4 +94,73 @@ export function searchZones(zones,{previews,type='all',star='all'}){
     const rank={matched:0,warning:1,pool:2,possible:3};
     return rank[a.quality]-rank[b.quality]||b.hitCount-a.hitCount||b.zone.star-a.zone.star||a.zone.id.localeCompare(b.zone.id);
   });
+}
+
+// Mixed-type zones are inferred from Serebii's independently documented
+// single-type source pools. The source does NOT identify which particular
+// type-specific zone patterns or clusters will be paired in-game.
+// Instead of fabricating cross-product "zones", return a bounded, star-specific
+// group of independently compatible source patterns for each selected type.
+export function searchMixedZones(zones,{previews,types,star='all'}) {
+  const observed=previews.map(normName).filter(Boolean);
+  const selected=[...new Set((types||[]).map(normName).filter(t=>t&&t!=='all'))];
+  if(observed.length===0||selected.length<2||selected.length>3||selected.includes('special'))return [];
+  const stars=star==='all'?[1,2,3,4,5]:[Number(star)];
+  return stars.flatMap(rating=>{
+    const bases=selected.map(type=>zones.filter(z=>z.type===type&&z.star===rating&&z.status!=='possible'&&z.groups?.length===3));
+    if(bases.some(list=>!list.length))return [];
+    const candidateMaps=selected.map(()=>new Map());
+    const assignment=new Array(observed.length).fill(0);
+    let allocationCount=0;
+
+    // At most 3^3 = 27 type-allocation attempts. Each observed Pokémon must
+    // be explained by one source type, which itself must contain a valid
+    // source pattern at the same star rating as the other selected types.
+    function visit(i){
+      if(i<observed.length){
+        for(let t=0;t<selected.length;t++){assignment[i]=t;visit(i+1);}
+        return;
+      }
+      const compatible=selected.map((_,typeIndex)=>{
+        const indices=observed.map((_,j)=>j).filter(j=>assignment[j]===typeIndex);
+        const subset=indices.map(j=>observed[j]);
+        const rows=bases[typeIndex].flatMap(zone=>{
+          if(!subset.length)return [{zone,quality:'unconstrained',indices:[]}];
+          const result=classifyZone(zone,subset);
+          if(!result||result.quality==='possible')return [];
+          return [{zone,quality:result.quality,indices}];
+        });
+        return rows;
+      });
+      if(compatible.some(group=>!group.length))return;
+      allocationCount++;
+      compatible.forEach((options,typeIndex)=>{
+        const map=candidateMaps[typeIndex];
+        for(const candidate of options){
+          let entry=map.get(candidate.zone.id);
+          if(!entry){
+            entry={zone:candidate.zone,observedIndices:new Set(),qualities:new Set()};
+            map.set(candidate.zone.id,entry);
+          }
+          candidate.indices.forEach(j=>entry.observedIndices.add(j));
+          entry.qualities.add(candidate.quality);
+        }
+      });
+    }
+    visit(0);
+    if(!allocationCount)return [];
+    const sources=selected.map((type,i)=>({
+      type,
+      candidates:[...candidateMaps[i].values()].map(c=>({
+        zone:c.zone,
+        observedIndices:[...c.observedIndices].sort((a,b)=>a-b),
+        qualities:[...c.qualities]
+      })).sort((a,b)=>b.observedIndices.length-a.observedIndices.length||a.zone.number-b.zone.number)
+    }));
+    return [{
+      kind:'mixed',id:`MIXED-${selected.join('-')}-${rating}`,types:selected,
+      star:rating,sources,allocationCount,previewCount:observed.length,
+      status:'inferred'
+    }];
+  }).sort((a,b)=>b.star-a.star);
 }

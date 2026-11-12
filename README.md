@@ -1,6 +1,6 @@
 # Hyperspace Finder — Pokémon Legends: Z-A
 
-Static, GitHub Pages-compatible frontend for identifying Hyperspace Wild Zone combinations from up to three in-game preview Pokémon. No API keys, accounts, backend, build step, or third-party JavaScript are required. The database is pre-generated from the Serebii-based local importer, **not loaded from a live Google Sheet**.
+Static, GitHub Pages-compatible frontend for exploring Hyperspace Wild Zone spawn pools from up to three in-game preview Pokémon. Supports both single-type source combinations and inferred two- or three-type source pool matching. No API keys, accounts, backend, build step, or third-party JavaScript are required. The database is pre-generated from the Serebii-based local importer, **not loaded from a live Google Sheet**.
 
 ## Quick start (Windows)
 
@@ -50,7 +50,25 @@ Selecting a combination preserves its zone ID in the shareable URL. Search input
 - Regional forms remain separate under their stored form keys. For example, `026-a` is offered as **Alolan Raichu** while a generic **Raichu** search can include both forms.
 - Source rarity values are left unchanged, including when the source percentages sum above or below 100% or multiple forms share a name.
 - Special-zone possible candidates are included on observed Pokémon overlap. Their absence from search results must **not** be treated as proof they are impossible: the source's slot assignments are incomplete.
-- Source-page type and star are filters. Zone size and mixed-type assembly are **not** validated by this dataset and are intentionally not inferred.
+- Single-type source-page matches and mixed-type inference are deliberately displayed separately. Zone size is not modeled.
+
+
+## Mixed-type matching (inferred, not a zone catalog)
+
+Choose a first type and optionally a second and third type, then enter the observed Pokémon and star rating. With one type, the finder uses the existing documented source-zone matching. With two or three types, it:
+
+1. Filters every selected type's source-zone combinations to the **same star rating**. The chosen rating is strongly recommended; with "Any", it shows separate results by rating.
+2. Considers different assignments of each preview Pokémon to one of the selected types. Regional forms are matched by their exact form identity. An assignment must be explainable by at least one compatible source combination for **every** selected type, but a type can have zero visible preview Pokémon.
+3. Displays **independently compatible source patterns per type** (not a guessed cross-product of full zones). For each type it lists additional possible species, levels, source rarities, and how often each occurs among the compatible source patterns. Expand **Inspect source patterns** to view individual documented clusters.
+4. Labels the whole result **Inferred**. The source guide says mixed zones can assemble clusters from different types but does **not** provide a definitive pairing map or exact cluster selection. Consequently a source pattern matching the input is **not proof that its other clusters actually appear** in this specific mixed zone. “X/Y source patterns” is not a spawn probability.
+
+**Example:** choose Ghost + Normal, 3 stars, and enter `Lampent`, `Litwick`, `Porygon`. The finder finds 3 independently compatible Ghost source patterns and 2 Normal source patterns, and shows their other possible Pokémon. This is a set of leads, not six confirmed mixed zones.
+
+Special/Legendary zones are not eligible for inferred mixing because their preview-slot assignments remain incomplete. Two or three identical type selections are not treated as a mixed zone.
+
+### Regional forms
+
+Alolan, Galarian, and Hisuian forms are distinguished when their stored Serebii sprite suffix and species identify a true regional form. Suffixes that mean something else (e.g. Heat Rotom) are not labeled Hisuian. Plain species names still match any form unless a region is stated explicitly.
 
 ## Tests
 
@@ -68,4 +86,4 @@ Fan project. Pokémon characters and imagery are owned by their respective right
 
 **Alolan Raichu + Flaaffy + Ampharos**, Electric, 4 stars is listed in the recorded spawn pool for `ELECTRIC-030` (Serebii 4-star Electric zone #10). Alolan Raichu occupies cluster 1, while Flaaffy and Ampharos are both recorded in cluster 2. The finder now displays this as **Possible · shared cluster**, not a falsely confirmed slot assignment.
 
-Run `node --test tests/matcher.test.mjs` to verify it.
+Run `node --test tests/*.test.mjs` to verify all matching and UI smoke tests.

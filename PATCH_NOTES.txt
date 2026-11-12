@@ -1,0 +1,13 @@
+Mixed-type matching patch for arjunptm/legends-za-hyperspace-finder
+
+1. Unzip into the existing local clone, replacing files.
+2. Test: node --test tests/*.test.mjs
+3. Commit and push: git add . && git commit -m "Add inferred mixed-type source pool matching" && git push
+
+Try:
+  Preview: Lampent, Litwick, Porygon
+  Type 1: Ghost | Type 2: Normal | Stars: 3
+  Expect: inferred 3★ mixed group with Ghost 3 and Normal 2 source patterns.
+
+This adds no backend and does not change data/zones.json.
+New results indicate *independently compatible source patterns*; exact mixed-zone pairings and cluster contributions are not confirmed by source data.

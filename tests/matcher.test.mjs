@@ -59,3 +59,53 @@ test('shared-cluster entries are possible, not confirmed',()=>{
  assert.equal(assignPreviews(groups,['A','B','D']),null);
  assert.equal(assignFromPool(groups,['A','A','D']),null); // same spawn record cannot count twice
 });
+
+import {searchMixedZones} from '../matcher.mjs';
+
+test('Ghost + Normal 3-star reveals independently compatible source pools',()=>{
+ const matches=searchMixedZones(zones,{previews:['Lampent','Litwick','Porygon'],types:['ghost','normal'],star:3});
+ assert.equal(matches.length,1);
+ const entry=matches[0];
+ assert.equal(entry.kind,'mixed');
+ assert.equal(entry.star,3);
+ assert.ok(entry.allocationCount>0);
+ const ghost=entry.sources.find(s=>s.type==='ghost');
+ const normal=entry.sources.find(s=>s.type==='normal');
+ assert.ok(ghost.candidates.some(c=>c.zone.id==='GHOST-011'));
+ assert.ok(normal.candidates.some(c=>c.zone.id==='NORMAL-029'));
+ assert.ok(entry.sources.every(s=>s.candidates.every(c=>c.zone.star===3)));
+ assert.ok(!('zone' in entry)); // no fabricated source pairing
+});
+
+test('mixed search does not assign incompatible Pokémon to an unrelated type',()=>{
+ assert.deepEqual(searchMixedZones(zones,{previews:['Alolan Raichu'],types:['ghost','normal'],star:3}),[]);
+});
+
+test('mixed search enforces the same star rating across types',()=>{
+ const fake=[
+   {id:'A1',type:'ghost',star:1,status:'matched',groups:[{slot:1,members:[{name:'A'}]},{slot:2,members:[{name:'C'}]},{slot:3,members:[{name:'D'}]}]},
+   {id:'B2',type:'normal',star:2,status:'matched',groups:[{slot:1,members:[{name:'B'}]},{slot:2,members:[{name:'E'}]},{slot:3,members:[{name:'F'}]}]}
+ ];
+ assert.deepEqual(searchMixedZones(fake,{previews:['A','B'],types:['ghost','normal'],star:'all'}),[]);
+});
+
+test('3-type search accepts multiple preview-to-type allocations without enumerating pairs',()=>{
+ const matches=searchMixedZones(zones,{previews:['Lampent','Porygon'],types:['ghost','normal','fighting'],star:3});
+ assert.equal(matches.length,1);
+ assert.deepEqual(matches[0].types,['ghost','normal','fighting']);
+ assert.equal(matches[0].sources.length,3);
+ assert.ok(matches[0].sources.every(s=>s.candidates.length>0));
+});
+
+test('mixed search will not treat Special legendary tables as verified source patterns',()=>{
+ assert.deepEqual(searchMixedZones(zones,{previews:['Latias','Porygon'],types:['special','normal'],star:5}),[]);
+});
+
+test('region-specific names are not confused with similarly suffixed nonregional forms',()=>{
+ assert.equal(displayName({name:'Slowbro',form:'080-g'}),'Galarian Slowbro');
+ assert.equal(displayName({name:'Goodra',form:'706-h'}),'Hisuian Goodra');
+ assert.equal(displayName({name:'Rotom',form:'479-h'}),'Rotom');
+ assert.equal(matchesMember({name:'Slowbro',form:'080'},'Galarian Slowbro'),false);
+ assert.equal(matchesMember({name:'Slowbro',form:'080-g'},'Galarian Slowbro'),true);
+ assert.equal(matchesMember({name:'Goodra',form:'706-h'},'Goodra (Hisuian)'),true);
+});

@@ -8,3 +8,25 @@
 @media(max-width:760px){.shell{width:min(100% - 22px,1500px)}.site-header{height:45px}.site-name{font-size:14px}.dataset-status{font-size:10px}.controls{padding:10px}.controls-title{margin-bottom:8px}.controls-title span{font-size:10px}.control-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.field input,.field select{height:35px;padding:0 7px;font-size:12px}.field>span{font-size:10px}.search-actions button{height:35px;padding:0 8px;font-size:11px}.results-bar{gap:8px;min-height:41px;flex-wrap:wrap;padding:5px 0}.results-bar h2{font-size:14px}.result-summary{gap:6px 11px}.results-layout{display:flex;flex-direction:column;height:auto;overflow:visible}.candidate-panel{border-right:0;border-bottom:1px solid var(--line)}.panel-heading{min-height:29px;padding:6px 10px}.candidate-list{display:flex;overflow:auto;max-height:none;min-height:0;flex:none;scroll-snap-type:x proximity}.candidate{width:190px;min-width:190px;flex:none;border-bottom:0;border-left:0;border-right:1px solid var(--line);border-top:3px solid transparent;padding:8px 10px;scroll-snap-align:start}.candidate[aria-pressed="true"]{border-left:0;border-top-color:var(--accent)}.detail-panel{padding:12px;overflow:visible}.cluster-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.member{padding:6px 7px}.member-meta{font-size:9px}.detail-head h3{font-size:16px}.extra-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.site-name{font-size:13px}.dataset-status{font-size:9px;white-space:nowrap}.controls-title{display:block}.controls-title span{display:block;margin-top:2px}.control-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.pokemon-field{grid-column:span 2}.type-field,.star-field{grid-row:auto;grid-column:span 1}.search-actions{grid-column:span 2;grid-row:auto;justify-content:flex-start}.search-actions button{flex:1}.example-button{margin-left:0}.result-summary{width:100%;order:5}.results-layout{border-radius:5px}.detail-head{gap:4px}.detail-head h3{font-size:16px}.cluster-grid{grid-template-columns:1fr}.cluster-head{padding:6px 9px}.member{display:grid;grid-template-columns:1fr auto;column-gap:10px}.member-meta{font-size:10px}.extra-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.results-bar{padding:6px 0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
+/* Additional type selectors use the existing dense two-pane workspace. */
+.control-grid{grid-template-columns:repeat(3,minmax(112px,1fr)) repeat(3,minmax(95px,.72fr)) minmax(82px,.55fr) auto}
+.mixed-source{padding:10px 0;border-bottom:1px solid var(--line)}
+.mixed-source:last-child{border-bottom:0}
+.mixed-source-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:7px}
+.mixed-source-head strong{font-size:12px}
+.mixed-source-head span{font-size:11px;color:var(--muted)}
+.mixed-source .extra-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.mixed-references{margin-top:12px}
+.pattern-details{border:1px solid var(--line);border-radius:5px;margin:5px 0;background:#fff}
+.pattern-details>summary{padding:8px 10px;cursor:pointer;font-size:11px;font-weight:600}
+.pattern-details>summary:focus-visible{outline:2px solid var(--accent)}
+.pattern-details[open]>summary{border-bottom:1px solid var(--line)}
+.pattern-detail-body{padding:10px}
+.pattern-detail-body .cluster-grid{gap:6px}
+.pattern-note{margin:5px 0 0;font-size:10px;color:var(--muted)}
+.mixed-summary{font-size:11px;color:var(--muted);margin:8px 0 0}
+.mixed-extra-count{font-size:10px;color:var(--muted)}
+@media(max-width:1330px){.control-grid{grid-template-columns:repeat(3,minmax(0,1fr)) repeat(2,minmax(0,1fr))}.search-actions{grid-column:auto;grid-row:auto}}
+@media(max-width:900px){.control-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.type-field,.star-field,.search-actions{grid-column:auto;grid-row:auto}.search-actions{justify-content:flex-start}}
+@media(max-width:540px){.control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pokemon-field{grid-column:span 2}.type-field,.star-field{grid-column:span 1}.search-actions{grid-column:span 2}.mixed-source .extra-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
