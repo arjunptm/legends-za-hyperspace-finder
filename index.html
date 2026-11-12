@@ -44,6 +44,14 @@
         <div id="resultSummary" class="result-summary" aria-live="polite"></div>
         <button id="sampleButton" class="example-button" type="button">Load example</button>
       </div>
+      <section id="discoverySummary" class="discovery-summary" aria-labelledby="discoveryTitle" hidden>
+        <div class="discovery-heading">
+          <h3 id="discoveryTitle">Other possible Pokémon <span id="discoveryCount"></span></h3>
+          <span id="discoveryNote" class="discovery-note"></span>
+        </div>
+        <div id="discoveryList" class="discovery-list"></div>
+        <button type="button" id="discoveryMore" class="discovery-more" hidden>Show all</button>
+      </section>
       <div class="results-layout">
         <aside class="candidate-panel" aria-label="Matching combinations">
           <div class="panel-heading">Combinations <span id="candidateCount"></span></div>

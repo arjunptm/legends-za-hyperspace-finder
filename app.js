@@ -1,10 +1,11 @@
 import {normName, displayName, matchesMember, searchZones, searchMixedZones} from './matcher.mjs';
+import {summarizeOtherPokemon} from './discovery.mjs';
 
 const $ = (id) => document.getElementById(id);
 const inputs=[$('pokemon1'),$('pokemon2'),$('pokemon3')];
 const typeInput=$('zoneType'), type2Input=$('zoneType2'), type3Input=$('zoneType3'), starInput=$('starRating');
 const list=$('resultsList'), detail=$('zoneDetails'), summary=$('resultSummary');
-let zones=[], names=[], results=[], selectedId=null, toastTimeout=null;
+let zones=[], names=[], results=[], selectedId=null, toastTimeout=null, showAllExtras=false;
 const TYPES=['normal','fighting','flying','poison','ground','rock','bug','ghost','steel','fire','water','grass','electric','psychic','ice','dragon','dark','fairy','special'];
 const escapeText=(s)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const title=s=>s ? s[0].toUpperCase()+s.slice(1) : '';
@@ -59,6 +60,34 @@ function renderCandidates(query){
     </button>`;
   }).join('');
 }
+function renderDiscovery(query){
+  const root=$('discoverySummary');
+  if(!results.length){root.hidden=true;return;}
+  const {mixed,totalResults,items}=summarizeOtherPokemon(results,query.previews);
+  root.hidden=false;
+  $('discoveryCount').textContent=`(${items.length})`;
+  $('discoveryNote').textContent=mixed
+    ? 'Inferred from compatible single-type source patterns; not guaranteed.'
+    : `Across ${totalResults} matching combination${totalResults===1?'':'s'}; not all in one zone.`;
+  const displayed=showAllExtras?items:items.slice(0,12);
+  if(!items.length){
+    $('discoveryList').innerHTML='<span class="discovery-empty">No other Pokémon listed in these candidates.</span>';
+  }else{
+    $('discoveryList').innerHTML=displayed.map(entry=>{
+      const resultId=entry.resultIds[0];
+      const reference=mixed
+        ? `${entry.count} source pattern${entry.count===1?'':'s'} · ${entry.sourceTypes.map(title).join(' + ')}`
+        : `${entry.count} of ${totalResults} combination${totalResults===1?'':'s'}${entry.zones.length===1?` · zone #${entry.zones[0].number}`:''}`;
+      if(mixed)return `<div class="discovery-entry"><strong>${escapeText(entry.label)}</strong><span>${escapeText(reference)}</span></div>`;
+      return `<button class="discovery-entry" type="button" data-extra-result="${escapeText(resultId)}" title="Show zone details for ${escapeText(entry.label)}"><strong>${escapeText(entry.label)}</strong><span>${escapeText(reference)}</span></button>`;
+    }).join('');
+  }
+  const button=$('discoveryMore');
+  button.hidden=items.length<=12;
+  button.textContent=showAllExtras?'Show fewer':`Show all ${items.length} Pokémon`;
+  $('discoveryList').classList.toggle('discovery-expanded',showAllExtras);
+}
+
 function memberHtml(m,previews){
   const seen=observed(m,previews);
   return `<div class="member${seen?' observed':''}"><div class="member-top"><span class="member-name">${escapeText(displayName(m))}${seen?'<span class="observed-indicator">Observed</span>':''}</span><span class="member-percent">${percent(m.rarity)}</span></div><div class="member-meta">Lv ${escapeText(range(m.level))} · Alpha ${percent(m.alpha)} (Lv ${escapeText(range(m.alphaLevel))})</div></div>`;
@@ -139,7 +168,7 @@ function render(){
   const unknown=query.previews.filter(x=>x&&!known.has(normName(x)));
   if(!zones.length){detail.innerHTML='<div class="placeholder">Loading encounter data…</div>';return;}
   if(!valid.length||unknown.length){
-    results=[];selectedId=null;$('resultCount').textContent='';summary.textContent='';
+    results=[];selectedId=null;$('resultCount').textContent='';summary.textContent='';$('discoverySummary').hidden=true;
     renderCandidates(query);
     detail.innerHTML=`<div class="placeholder">${unknown.length?`Not in the encounter list: ${escapeText(unknown.join(', '))}. Select a listed name.`:'Enter observed Pokémon to see matching zones and other possible spawns.'}</div>`;
     return;
@@ -155,11 +184,12 @@ function render(){
     $('resultCount').textContent=`${results.length} ${results.length===1?'combination':'combinations'}`;
     summary.innerHTML=`<span><strong>${n.matched}</strong> compatible</span><span><strong>${n.warning}</strong> warnings</span><span><strong>${n.pool}</strong> shared-cluster</span><span><strong>${n.possible}</strong> incomplete</span>`;
   }
+  renderDiscovery(query);
   renderCandidates(query);
   if(results.length)renderDetail(query);
   else detail.innerHTML='<div class="placeholder">No compatible source pools found for these previews and filters. Try adjusting the types or star rating.</div>';
 }
-function onChange(){render();syncUrl();}
+function onChange(){showAllExtras=false;render();syncUrl();}
 async function init(){
   for(const type of TYPES){
     const option=document.createElement('option');option.value=type;option.textContent=title(type);typeInput.append(option);
@@ -180,6 +210,17 @@ async function init(){
     $('sampleButton').addEventListener('click',()=>{['Alolan Raichu','Flaaffy','Ampharos'].forEach((x,i)=>inputs[i].value=x);typeInput.value='electric';type2Input.value='';type3Input.value='';syncTypeControls();starInput.value='4';selectedId=null;onChange();});
     $('shareButton').addEventListener('click',async()=>{syncUrl();try{await navigator.clipboard.writeText(location.href);toast('Search link copied.');}catch{toast('Copy the browser URL to share.');}});
     list.addEventListener('click',event=>{const button=event.target.closest('button[data-zone]');if(!button)return;selectedId=button.dataset.zone;renderCandidates(getQuery());renderDetail(getQuery());syncUrl();});
+    $('discoveryMore').addEventListener('click',()=>{showAllExtras=!showAllExtras;renderDiscovery(getQuery());});
+    $('discoveryList').addEventListener('click',event=>{
+      const button=event.target.closest('button[data-extra-result]');if(!button)return;
+      const id=button.dataset.extraResult;
+      if(!results.some(r=>(r.kind==='mixed'?r.id:r.zone.id)===id))return;
+      selectedId=id;
+      renderCandidates(getQuery());renderDetail(getQuery());syncUrl();
+      const selected=list.querySelector('button[aria-pressed="true"]');
+      selected?.scrollIntoView({block:'nearest',inline:'nearest'});
+      if(window.matchMedia('(max-width:760px)').matches)detail.scrollIntoView({block:'start',behavior:'smooth'});
+    });
     render();
   }catch(error){console.error(error);$('datasetStatus').textContent='Data unavailable';detail.innerHTML='<div class="placeholder">Could not load encounter data. Refresh the page. Local files require an HTTP server rather than file://.</div>';}
 }

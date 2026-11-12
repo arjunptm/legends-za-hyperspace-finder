@@ -30,3 +30,24 @@
 @media(max-width:1330px){.control-grid{grid-template-columns:repeat(3,minmax(0,1fr)) repeat(2,minmax(0,1fr))}.search-actions{grid-column:auto;grid-row:auto}}
 @media(max-width:900px){.control-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.type-field,.star-field,.search-actions{grid-column:auto;grid-row:auto}.search-actions{justify-content:flex-start}}
 @media(max-width:540px){.control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pokemon-field{grid-column:span 2}.type-field,.star-field{grid-column:span 1}.search-actions{grid-column:span 2}.mixed-source .extra-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Highest-priority result: potential Pokémon across every matching source. */
+.discovery-summary{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin:1px 0 8px}
+.discovery-summary[hidden],.discovery-more[hidden]{display:none}
+.discovery-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin:0 0 7px}
+.discovery-heading h3{margin:0;font-size:15px;line-height:1.25}
+.discovery-heading h3 span{font-weight:400;color:var(--muted)}
+.discovery-note{font-size:11px;color:var(--muted)}
+.discovery-list{display:flex;flex-wrap:wrap;gap:6px}
+.discovery-entry{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:2px;border:1px solid #cbd7df;border-radius:5px;background:#f8fbfd;color:var(--ink);padding:7px 10px;min-width:175px;max-width:250px;flex:1 1 180px}
+.discovery-entry:hover{background:#eaf3f8;border-color:#9fbdcf}
+.discovery-entry:focus-visible,.discovery-more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.discovery-entry strong{font-size:13px;font-weight:700}
+.discovery-entry span{font-size:10px;color:var(--muted)}
+.discovery-more{display:block;background:none;border:0;color:var(--accent);padding:6px 2px 0;font-size:11px;font-weight:600;text-align:left}
+.discovery-empty{font-size:12px;color:var(--muted)}
+.discovery-list.discovery-expanded{max-height:196px;overflow-y:auto;overscroll-behavior:contain;padding-right:3px}
+@media(max-width:540px){.discovery-summary{padding:9px 10px}.discovery-heading h3{font-size:14px}.discovery-entry{min-width:calc(50% - 4px);max-width:none;flex:1 1 calc(50% - 4px);padding:6px 8px}.discovery-entry strong{font-size:12px}.discovery-entry span{font-size:10px}}
+@media(min-width:761px){.results:has(.discovery-summary:not([hidden])) .results-layout{height:clamp(390px,calc(100dvh - 350px),850px)}}
+@media(min-width:375px) and (max-width:540px){.discovery-entry{min-width:0;max-width:none;flex:1 1 calc(33.333% - 5px);padding:6px}.discovery-entry span{font-size:9px}}
