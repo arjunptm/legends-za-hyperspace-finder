@@ -63,23 +63,19 @@ function renderCandidates(query){
 function renderDiscovery(query){
   const root=$('discoverySummary');
   if(!results.length){root.hidden=true;return;}
-  const {mixed,totalResults,items}=summarizeOtherPokemon(results,query.previews);
+  const {mixed,items}=summarizeOtherPokemon(results,query.previews);
   root.hidden=false;
   $('discoveryCount').textContent=`(${items.length})`;
-  $('discoveryNote').textContent=mixed
-    ? 'Inferred from compatible single-type source patterns; not guaranteed.'
-    : `Across ${totalResults} matching combination${totalResults===1?'':'s'}; not all in one zone.`;
+  $('discoveryNote').textContent='Ranked by how often listed in possible matches, not actual spawn chances.';
   const displayed=showAllExtras?items:items.slice(0,12);
   if(!items.length){
-    $('discoveryList').innerHTML='<span class="discovery-empty">No other Pokémon listed in these candidates.</span>';
+    $('discoveryList').innerHTML='<span class="discovery-empty">No other Pokémon listed in these possibilities.</span>';
   }else{
     $('discoveryList').innerHTML=displayed.map(entry=>{
       const resultId=entry.resultIds[0];
-      const reference=mixed
-        ? `${entry.count} source pattern${entry.count===1?'':'s'} · ${entry.sourceTypes.map(title).join(' + ')}`
-        : `${entry.count} of ${totalResults} combination${totalResults===1?'':'s'}${entry.zones.length===1?` · zone #${entry.zones[0].number}`:''}`;
-      if(mixed)return `<div class="discovery-entry"><strong>${escapeText(entry.label)}</strong><span>${escapeText(reference)}</span></div>`;
-      return `<button class="discovery-entry" type="button" data-extra-result="${escapeText(resultId)}" title="Show zone details for ${escapeText(entry.label)}"><strong>${escapeText(entry.label)}</strong><span>${escapeText(reference)}</span></button>`;
+      const description=entry.frequency;
+      if(mixed)return `<div class="discovery-entry"><strong>${escapeText(entry.label)}</strong><span>${escapeText(description)}</span></div>`;
+      return `<button class="discovery-entry" type="button" data-extra-result="${escapeText(resultId)}" title="Show zone details for ${escapeText(entry.label)}"><strong>${escapeText(entry.label)}</strong><span>${escapeText(description)}</span></button>`;
     }).join('');
   }
   const button=$('discoveryMore');
