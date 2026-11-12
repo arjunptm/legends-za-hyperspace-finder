@@ -44,3 +44,27 @@ test('A species can be recorded in multiple source zones but only once per zone'
   const summary=summarizeOtherPokemon(synthetic,['A']);
   assert.equal(summary.items[0].count,2);
 });
+
+test('mixed Fairy + Poison summary is concise and ranks listed options without guessing odds',()=>{
+  const previews=['Mawile','Bellsprout','Arbok'];
+  const matches=searchMixedZones(zones,{previews,types:['fairy','poison'],star:3});
+  const summary=summarizeOtherPokemon(matches,previews);
+  assert.equal(matches.length,1);
+  assert.equal(summary.items.filter(e=>e.name==='Floette').length,1);
+  assert.equal(summary.items.find(e=>e.name==='Floette').forms.length,5);
+  assert.equal(summary.items.find(e=>e.name==='Weepinbell').frequency,'In most possibilities');
+  assert.equal(summary.items.find(e=>e.name==='Ekans').frequency,'In some possibilities');
+  assert.equal(summary.items.find(e=>e.name==='Spinarak').frequency,'In a few possibilities');
+  assert.equal(summary.items[0].name,'Weepinbell');
+  assert.ok(summary.items.length < 27); // cosmetic form codes no longer clutter the top.
+  assert.ok(summary.items.every(e=>!e.label.includes('(')));
+});
+
+test('cosmetic forms merge for top summary but regional forms remain separate',()=>{
+  const combined=[{zone:{id:'A',type:'normal',star:1,number:1,status:'matched',groups:[{members:[{name:'Floette',form:'670-b'},{name:'Floette',form:'670-w'},{name:'Raichu',form:'026-a'},{name:'Raichu',form:'026'}]}]}}];
+  const summary=summarizeOtherPokemon(combined,['Pidgey']);
+  assert.equal(summary.items.find(x=>x.name==='Floette').count,1);
+  assert.equal(summary.items.find(x=>x.name==='Floette').forms.length,2);
+  assert.ok(summary.items.some(x=>x.name==='Raichu'));
+  assert.ok(summary.items.some(x=>x.name==='Alolan Raichu'));
+});
