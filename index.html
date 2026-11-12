@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#112943" />
+  <meta name="description" content="Find Pokémon Legends: Z-A Hyperspace Wild Zone combinations from their three preview Pokémon." />
+  <title>Hyperspace Finder · Legends: Z-A</title>
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell navline">
+      <a class="brand" href="./" aria-label="Hyperspace Finder home">
+        <span class="brand-symbol" aria-hidden="true">✦</span>
+        <span>HYPERSPACE <strong>FINDER</strong></span>
+      </a>
+      <div class="header-note" id="datasetStatus"><span class="dot"></span> Loading encounter database…</div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <div class="eyebrow">POKÉMON LEGENDS: Z-A <span class="eyebrow-dot">·</span> HYPERSPACE LUMIOSE</div>
+      <h1>Three previews.<br /><span>Every possibility.</span></h1>
+      <p>Enter the Pokémon shown on a Hyperspace Wild Zone preview to find compatible combinations and discover everything else that could spawn.</p>
+    </section>
+
+    <section class="search-panel" aria-labelledby="searchTitle">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">YOUR OBSERVATIONS</p>
+          <h2 id="searchTitle">Identify a wild zone</h2>
+        </div>
+        <button id="sampleButton" class="text-button" type="button"><span aria-hidden="true">✦</span> Try an example</button>
+      </div>
+
+      <div class="preview-grid">
+        <label class="preview-field">
+          <span class="preview-label"><span class="slot-number">01</span> Preview Pokémon</span>
+          <input type="search" id="pokemon1" list="pokemonNames" placeholder="Search Pokémon…" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="First preview Pokémon" />
+        </label>
+        <label class="preview-field">
+          <span class="preview-label"><span class="slot-number">02</span> Preview Pokémon</span>
+          <input type="search" id="pokemon2" list="pokemonNames" placeholder="Search Pokémon…" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Second preview Pokémon" />
+        </label>
+        <label class="preview-field">
+          <span class="preview-label"><span class="slot-number">03</span> Preview Pokémon</span>
+          <input type="search" id="pokemon3" list="pokemonNames" placeholder="Search Pokémon…" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Third preview Pokémon" />
+        </label>
+      </div>
+      <datalist id="pokemonNames"></datalist>
+      <p class="input-hint">Previews can be entered in any order. Leave a slot empty if you only know one or two Pokémon.</p>
+
+      <div class="filter-bar">
+        <label class="select-field"><span>Zone type <span class="quiet">(source category)</span></span>
+          <select id="zoneType"><option value="all">All types</option></select>
+        </label>
+        <label class="select-field"><span>Star rating</span>
+          <select id="starRating">
+            <option value="all">Any rating</option>
+            <option value="1">★ 1 star</option><option value="2">★★ 2 stars</option><option value="3">★★★ 3 stars</option>
+            <option value="4">★★★★ 4 stars</option><option value="5">★★★★★ 5 stars</option>
+          </select>
+        </label>
+        <div class="search-actions">
+          <button type="button" class="subtle-button" id="clearButton">Reset</button>
+          <button type="button" class="primary-button" id="shareButton"><span aria-hidden="true">↗</span> Share search</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="results" id="results" aria-labelledby="resultsTitle">
+      <div class="results-heading">
+        <div>
+          <p class="section-kicker">SEARCH RESULTS</p>
+          <h2 id="resultsTitle">Potential combinations</h2>
+        </div>
+        <div class="result-count" id="resultCount" aria-live="polite"></div>
+      </div>
+      <div id="resultSummary" class="summary-stats" aria-live="polite"></div>
+      <div id="resultsList" class="results-list"></div>
+      <div class="loadmore"><button id="loadMore" class="subtle-button" hidden>Show more combinations</button></div>
+    </section>
+
+    <section class="guide" aria-labelledby="guideTitle">
+      <div class="guide-icon" aria-hidden="true">ⓘ</div>
+      <div>
+        <h2 id="guideTitle">How to interpret a match</h2>
+        <p>Each preview Pokémon must come from a <strong>different spawn cluster</strong>. The finder tests all possible assignments, not just the three Pokémon Serebii lists as focus representatives. Rarity percentages describe odds <strong>within a cluster</strong>, not the overall chance of encountering a zone.</p>
+        <p>Zones with unusual source percentages are searchable with warnings. Seven Special zones have incomplete cluster assignments and are shown only as tentative candidates. Mixed-type zone assembly and zone size aren't verified filters in this dataset.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell foot-inner">
+      <span>Fan-made research tool · Not affiliated with Nintendo, Game Freak, or The Pokémon Company.</span>
+      <span>Encounter data sourced from <a href="https://www.serebii.net/legendsz-a/hyperspacelumiose.shtml" target="_blank" rel="noopener noreferrer">Serebii</a> · Static snapshot</span>
+    </div>
+  </footer>
+  <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
