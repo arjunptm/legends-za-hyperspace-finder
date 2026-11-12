@@ -37,10 +37,11 @@ For images, the website **supports optional local image references**, but none a
 
 ## Matching rules
 
-- Three preview Pokémon are matched to three **different** spawn clusters by backtracking through all valid assignments. The order of preview inputs does not matter.
+- **Confirmed matches** assign preview Pokémon to different documented spawn clusters, in any order. **Possible shared-cluster matches** include cases where all entered species/forms exist in the zone but two belong to the same cluster. Such cases are clearly labeled as tentative.
 - Matching uses **every documented cluster member**, not just the representative focus Pokémon.
-- Duplicate Pokémon in the preview are supported only if they can be assigned to different clusters.
-- `matched` = full three-cluster data; `warning` = full three-cluster data with source concerns; `possible` = seven Special zones where reliable slot assignment is unavailable.
+- Duplicate Pokémon can be matched to different clusters; a possible shared-cluster match requires distinct member records and is not considered confirmed.
+- `matched` = distinct-slot match; `warning` = distinct-slot match with source concerns; `pool` = tentative full-pool match with shared clusters; `possible` = seven Special zones with unreliable slot assignments.
+- Regional forms remain separate under their stored form keys. For example, `026-a` is offered as **Alolan Raichu** while a generic **Raichu** search can include both forms.
 - Source rarity values are left unchanged, including when the source percentages sum above or below 100% or multiple forms share a name.
 - Special-zone possible candidates are included on observed Pokémon overlap. Their absence from search results must **not** be treated as proof they are impossible: the source's slot assignments are incomplete.
 - Source-page type and star are filters. Zone size and mixed-type assembly are **not** validated by this dataset and are intentionally not inferred.
@@ -56,3 +57,9 @@ node --test tests\matcher.test.mjs
 Data snapshot: 507 combinations, 467 matched, 33 warnings, 7 Special incomplete, 2,533 spawn records. Original encounter information: [Serebii Hyperspace Lumiose](https://www.serebii.net/legendsz-a/hyperspacelumiose.shtml).
 
 Fan project. Pokémon characters and imagery are owned by their respective rights holders.
+
+## Example that motivated the shared-cluster fallback
+
+**Alolan Raichu + Flaaffy + Ampharos**, Electric, 4 stars is listed in the recorded spawn pool for `ELECTRIC-030` (Serebii 4-star Electric zone #10). Alolan Raichu occupies cluster 1, while Flaaffy and Ampharos are both recorded in cluster 2. The finder now displays this as **Possible · shared cluster**, not a falsely confirmed slot assignment.
+
+Run `node --test tests/matcher.test.mjs` to verify it.

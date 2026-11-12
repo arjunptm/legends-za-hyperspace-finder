@@ -37,3 +37,25 @@ test('warning zones remain searchable',()=>{
  const matches=searchZones(zones,{previews:names,type:'normal',star:3});
  assert.equal(matches.find(x=>x.zone.id===z.id)?.quality,'warning');
 });
+
+import {displayName,assignFromPool,matchesMember} from '../matcher.mjs';
+test('Alolan form is separately searchable; standard Raichu never impersonates Alolan',()=>{
+ const alolan={name:'Raichu',form:'026-a'};
+ assert.equal(displayName(alolan),'Alolan Raichu');
+ assert.equal(matchesMember(alolan,'Alolan Raichu'),true);
+ assert.equal(matchesMember({name:'Raichu',form:'026'},'Alolan Raichu'),false);
+});
+test('observed Alolan Raichu + Flaaffy + Ampharos is a possible Electric 4-star zone 10',()=>{
+ const matches=searchZones(zones,{previews:['Alolan Raichu','Flaaffy','Ampharos'],type:'electric',star:4});
+ const zone=matches.find(m=>m.zone.id==='ELECTRIC-030');
+ assert.ok(zone);
+ assert.equal(zone.quality,'pool');
+ assert.deepEqual(zone.slots,[1,2,2]);
+ assert.ok(!matches.some(m=>m.zone.id==='ELECTRIC-022')); // only standard Raichu here
+});
+test('shared-cluster entries are possible, not confirmed',()=>{
+ const groups=[{slot:1,members:[{name:'A'},{name:'B'}]},{slot:2,members:[{name:'C'}]},{slot:3,members:[{name:'D'}]}];
+ assert.deepEqual(assignFromPool(groups,['A','B','D']),[1,1,3]);
+ assert.equal(assignPreviews(groups,['A','B','D']),null);
+ assert.equal(assignFromPool(groups,['A','A','D']),null); // same spawn record cannot count twice
+});

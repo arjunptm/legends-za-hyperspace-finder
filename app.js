@@ -1,4 +1,4 @@
-import {normName, searchZones} from './matcher.mjs';
+import {normName, displayName, searchZones} from './matcher.mjs';
 
 const $ = (id) => document.getElementById(id);
 const inputs=[$('pokemon1'),$('pokemon2'),$('pokemon3')];
@@ -22,12 +22,12 @@ function toast(message){const el=$('toast');el.textContent=message;el.hidden=fal
 function syncUrl(){const {previews,type,star}=getQuery();const url=new URL(window.location.href);url.search='';previews.forEach((s,i)=>{if(s)url.searchParams.set(`p${i+1}`,s)});if(type!=='all')url.searchParams.set('type',type);if(star!=='all')url.searchParams.set('star',star);history.replaceState(null,'',url);}
 function restoreQuery(){const query=new URLSearchParams(window.location.search);inputs.forEach((inp,i)=>{inp.value=query.get(`p${i+1}`)||''});const type=query.get('type');if(type&&[...typeInput.options].some(o=>o.value===type))typeInput.value=type;const star=query.get('star');if(star&&[...starInput.options].some(o=>o.value===star))starInput.value=star;}
 function buildMember(m,selected){
-  const selectedClass=selected.has(normName(m.name))?' selected':'';
+  const selectedClass=(selected.has(normName(m.name))||selected.has(normName(displayName(m))))?' selected':'';
   const icon=srcImage(m.image);
   const avatar=icon?`<img loading="lazy" src="${escapeText(icon)}" alt="" />`:escapeText((m.name||'?').slice(0,1));
   // Form keys are unambiguous in the importer even when names repeat.
   const form=m.hasSameNameForm?`<div class="member-form">Form: ${escapeText(m.form||'unspecified')}</div>`:'';
-  return `<div class="member${selectedClass}"><span class="member-art">${avatar}</span><div class="member-copy"><div class="member-name">${escapeText(m.name)}</div>${form}<div class="member-meta">Lv. ${escapeText(range(m.level))} · Alpha ${percent(m.alpha)} · Alpha Lv. ${escapeText(range(m.alphaLevel))}</div></div><span class="member-percent">${percent(m.rarity)}</span></div>`;
+  return `<div class="member${selectedClass}"><span class="member-art">${avatar}</span><div class="member-copy"><div class="member-name">${escapeText(displayName(m))}</div>${form}<div class="member-meta">Lv. ${escapeText(range(m.level))} · Alpha ${percent(m.alpha)} · Alpha Lv. ${escapeText(range(m.alphaLevel))}</div></div><span class="member-percent">${percent(m.rarity)}</span></div>`;
 }
 function clusterHtml(group,zone,selected,matchedSlots){
   const assigned=matchedSlots.has(group.slot);
@@ -39,9 +39,10 @@ function clusterHtml(group,zone,selected,matchedSlots){
 function zoneCard(result,index,query){
   const z=result.zone;
   const isPossible=result.quality==='possible';
+  const isPool=result.quality==='pool';
   const isWarning=result.quality==='warning';
-  const state=isPossible?'Possible match':isWarning?'Match with warning':'Compatible match';
-  const label=isPossible?'possible':isWarning?'warning':'';
+  const state=isPossible?'Possible match':isPool?'Possible · shared cluster':isWarning?'Match with warning':'Compatible match';
+  const label=(isPossible||isPool)?'possible':isWarning?'warning':'';
   const chosen=new Set(query.previews.map(normName).filter(Boolean));
   const slots=new Set(result.slots);
   const source=safeSource(z.source);
@@ -55,8 +56,9 @@ function zoneCard(result,index,query){
     const possible=[...unique.values()];
     body=`<p class="source-note">Pokémon recorded for this zone (preview-slot assignment is unknown):</p><div class="uncertain-list">${possible.slice(0,22).map(m=>`<span class="uncertain-name">${escapeText(m.name)}</span>`).join('')}${possible.length>22?`<span class="uncertain-name">+${possible.length-22} more</span>`:''}</div>`;
   }
+  const poolNote=isPool?'<div class="issue possible"><strong>Shared cluster:</strong> Every Pokémon is listed for this zone, but two previews belong to the same documented spawn cluster. This is a possible match, not a confirmed focus-slot assignment.</div>':'';
   const warning= z.warnings?.length?`<div class="issue${isPossible?' possible':''}"><strong>${isPossible?'Incomplete source:':'Source note:'}</strong> ${escapeText(z.warnings.join(' · '))}</div>`:'';
-  return `<details class="zone-card" ${index===0?'open':''}><summary><div><div class="zone-topline"><span class="zone-title">${escapeText(title(z.type))} Wild Zone <span class="zone-id">#${escapeText(z.number)}</span></span><span class="zone-state ${label}">${state}</span></div><div class="zone-subline"><span class="type-chip">${escapeText(title(z.type))}</span><span class="zone-stars" title="${Number(z.star)} stars">${stars}</span><span>·</span><span>${escapeText(z.id)}</span></div></div><span class="card-right"><span class="preview-match">${isPossible?`${result.hitCount} preview${result.hitCount!==1?'s':''} listed`:`${result.hitCount} preview${result.hitCount!==1?'s':''} matched`}</span><span class="card-chevron" aria-hidden="true">⌄</span></span></summary><div class="zone-body"><div class="source-details"><a target="_blank" rel="noopener noreferrer" href="${escapeText(source)}">View on Serebii ↗</a><span>${escapeText(info)}</span></div>${body}${warning}<p class="source-note">Rarity is conditional within its cluster. Image/form variants and source percentages are preserved as listed.</p></div></details>`;
+  return `<details class="zone-card" ${index===0?'open':''}><summary><div><div class="zone-topline"><span class="zone-title">${escapeText(title(z.type))} Wild Zone <span class="zone-id">#${escapeText(z.number)}</span></span><span class="zone-state ${label}">${state}</span></div><div class="zone-subline"><span class="type-chip">${escapeText(title(z.type))}</span><span class="zone-stars" title="${Number(z.star)} stars">${stars}</span><span>·</span><span>${escapeText(z.id)}</span></div></div><span class="card-right"><span class="preview-match">${isPossible?`${result.hitCount} preview${result.hitCount!==1?'s':''} listed`:`${result.hitCount} preview${result.hitCount!==1?'s':''} matched`}</span><span class="card-chevron" aria-hidden="true">⌄</span></span></summary><div class="zone-body"><div class="source-details"><a target="_blank" rel="noopener noreferrer" href="${escapeText(source)}">View on Serebii ↗</a><span>${escapeText(info)}</span></div>${body}${poolNote}${warning}<p class="source-note">Rarity is conditional within its cluster. Image/form variants and source percentages are preserved as listed.</p></div></details>`;
 }
 function render(){
   const query=getQuery();
@@ -78,10 +80,10 @@ function render(){
   }
   results=searchZones(zones,query);
   $('resultCount').textContent=`${results.length} combination${results.length===1?'':'s'}`;
-  const a=results.filter(x=>x.quality==='matched').length,b=results.filter(x=>x.quality==='warning').length,c=results.filter(x=>x.quality==='possible').length;
-  summary.innerHTML=`<div class="summary-stat"><strong>${a}</strong> compatible matches</div><div class="summary-stat warn"><strong>${b}</strong> with source warnings</div><div class="summary-stat possible"><strong>${c}</strong> tentative Special candidates</div>`;
+  const a=results.filter(x=>x.quality==='matched').length,b=results.filter(x=>x.quality==='warning').length,c=results.filter(x=>x.quality==='possible').length,d=results.filter(x=>x.quality==='pool').length;
+  summary.innerHTML=`<div class="summary-stat"><strong>${a}</strong> compatible matches</div><div class="summary-stat warn"><strong>${b}</strong> with source warnings</div><div class="summary-stat possible"><strong>${d}</strong> shared-cluster possibilities</div><div class="summary-stat possible"><strong>${c}</strong> tentative Special candidates</div>`;
   if(!results.length){
-    list.innerHTML=`<div class="empty-state"><div class="empty-icon">⌕</div><h3>No compatible combination found</h3><p>No zone in the selected category and star rating assigns these Pokémon to distinct known clusters. Try removing a filter. Special zones have incomplete data and cannot always be ruled out.</p></div>`;
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">⌕</div><h3>No compatible combination found</h3><p>No zone in the selected category and star rating contains all of these Pokémon in its known spawn pool. Try removing a filter. Special zones have incomplete data and cannot always be ruled out.</p></div>`;
     more.hidden=true;return;
   }
   list.innerHTML=results.slice(0,visible).map((r,i)=>zoneCard(r,i,query)).join('');
@@ -100,7 +102,7 @@ async function init(){
     const downloaded=await response.json();
     if(!Array.isArray(downloaded)||downloaded.length!==507)throw new Error('Unexpected encounter database structure');
     zones=downloaded;
-    names=[...new Set(zones.flatMap(z=>[...(z.groups||[]).flatMap(g=>g.members||[]),...(z.unassigned||[])].map(m=>m.name)))].sort((a,b)=>a.localeCompare(b));
+    names=[...new Set(zones.flatMap(z=>[...(z.groups||[]).flatMap(g=>g.members||[]),...(z.unassigned||[])].flatMap(m=>[m.name,displayName(m)])))].sort((a,b)=>a.localeCompare(b));
     const namesList=$('pokemonNames');
     for(const name of names){const option=document.createElement('option');option.value=name;namesList.appendChild(option)}
     $('datasetStatus').innerHTML='<span class="dot"></span> 507 zones · 2,533 spawn records';
