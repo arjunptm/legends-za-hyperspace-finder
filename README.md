@@ -87,3 +87,10 @@ Fan project. Pokémon characters and imagery are owned by their respective right
 **Alolan Raichu + Flaaffy + Ampharos**, Electric, 4 stars is listed in the recorded spawn pool for `ELECTRIC-030` (Serebii 4-star Electric zone #10). Alolan Raichu occupies cluster 1, while Flaaffy and Ampharos are both recorded in cluster 2. The finder now displays this as **Possible · shared cluster**, not a falsely confirmed slot assignment.
 
 Run `node --test tests/*.test.mjs` to verify all matching and UI smoke tests.
+
+
+## Aggregate other possible Pokémon (compact interface)
+
+The results page now **lists additional possible Pokémon across all candidate source combinations before the combination list**. For example, a Normal 4-star search with Furfrou, Pidgeotto, and Pidgeot displays Drampa, Kangaskhan, and Kecleon together. Each entry indicates in how many candidate combinations it appears. For single-type searches, selecting an entry opens an associated source combination; mixed-type entries are informational because their exact source combinations are inferred.
+
+This is a **union of candidates, not a guarantee that all are present together**. A count of 1/3 means one of three matching source combinations lists it; it is not a 33% spawn chance. For mixed-type matches, counts refer to the number of independently compatible source patterns, and the output is inferred rather than a verified assembled zone. The list is initially limited to 12 entries when there are many possibilities; you can expand it without changing search criteria.
