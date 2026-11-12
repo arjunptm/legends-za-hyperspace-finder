@@ -51,3 +51,55 @@
 @media(max-width:540px){.discovery-summary{padding:9px 10px}.discovery-heading h3{font-size:14px}.discovery-entry{min-width:calc(50% - 4px);max-width:none;flex:1 1 calc(50% - 4px);padding:6px 8px}.discovery-entry strong{font-size:12px}.discovery-entry span{font-size:10px}}
 @media(min-width:761px){.results:has(.discovery-summary:not([hidden])) .results-layout{height:clamp(390px,calc(100dvh - 350px),850px)}}
 @media(min-width:375px) and (max-width:540px){.discovery-entry{min-width:0;max-width:none;flex:1 1 calc(33.333% - 5px);padding:6px}.discovery-entry span{font-size:9px}}
+
+
+/* Quick-scan frequency scale. These categories are based on candidate records,
+   not in-game spawn odds. Apply color only to the top discovery cards. */
+.discovery-entry.frequency-most{background:#e5f5ec;border-color:#80bd9d;border-left:4px solid #208154}
+.discovery-entry.frequency-most span{color:#155d3d;font-weight:650}
+.discovery-entry.frequency-some{background:#eaf3fd;border-color:#9abfe8;border-left:4px solid #3778b3}
+.discovery-entry.frequency-some span{color:#205d90;font-weight:650}
+.discovery-entry.frequency-few{background:#f7f3e9;border-color:#dccd9f;border-left:4px solid #a18442}
+.discovery-entry.frequency-few span{color:#715922;font-weight:650}
+.discovery-entry.frequency-most:hover{background:#d8efdf}
+.discovery-entry.frequency-some:hover{background:#e0edfc}
+.discovery-entry.frequency-few:hover{background:#f1e9d5}
+
+/* True phone-sized layout. The HTML viewport meta tag is required for these
+   media queries to use physical CSS phone widths instead of desktop defaults. */
+@media(max-width:540px){
+  html,body{width:100%;min-width:0;overflow-x:hidden}
+  .shell{width:calc(100% - 20px);max-width:none}
+  .site-header{height:auto;min-height:47px}
+  .header-content{min-height:47px;padding:7px 0;gap:3px 12px;flex-wrap:wrap}
+  .site-name{font-size:14px}
+  .dataset-status{font-size:10px;white-space:normal}
+  main{padding-top:9px}
+  .controls{padding:9px}
+  .controls-title span{font-size:11px}
+  .control-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .pokemon-field{grid-column:auto}
+  .pokemon-field:nth-child(3){grid-column:1 / -1}
+  .field{min-width:0}
+  .field input,.field select{height:42px;min-width:0;font-size:16px;padding:0 9px}
+  .field>span{font-size:11px}
+  .search-actions{grid-column:1 / -1;grid-row:auto;justify-content:stretch}
+  .search-actions button{height:42px;flex:1;font-size:12px}
+  .results-bar{gap:5px 8px}
+  .result-summary{order:3;width:100%}
+  .example-button{margin-left:auto}
+  .discovery-heading{align-items:flex-start}
+  .discovery-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .discovery-entry{display:flex;min-width:0;max-width:none;width:100%;flex:none;padding:8px;overflow-wrap:anywhere}
+  .discovery-entry strong{font-size:12px;line-height:1.3}
+  .discovery-entry span{font-size:10px;line-height:1.3}
+  .candidate-list{max-width:100%;overflow-x:auto}
+  .detail-panel{min-width:0;overflow-wrap:anywhere}
+  .extra-grid,.mixed-source .extra-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cluster-grid{grid-template-columns:1fr}
+}
+@media(max-width:350px){
+  .discovery-list{grid-template-columns:1fr 1fr}
+  .site-name{font-size:13px}
+  .dataset-status{font-size:9px}
+}
