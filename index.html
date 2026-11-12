@@ -65,6 +65,18 @@
     </section>
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
-  <script type="module" src="./app.js"></script>
+  <script>
+    // Report initialization failures rather than leaving the static “Loading” label indefinitely.
+    function finderLoadFailure() {
+      const status = document.getElementById('datasetStatus');
+      if (status && status.textContent.includes('Loading')) {
+        status.textContent = 'Finder could not start. Reload this page.';
+      }
+    }
+    window.addEventListener('error', finderLoadFailure);
+    window.addEventListener('unhandledrejection', finderLoadFailure);
+    window.addEventListener('load', () => setTimeout(finderLoadFailure, 8000));
+  </script>
+  <script defer src="./app.js?v=5"></script>
 </body>
 </html>
