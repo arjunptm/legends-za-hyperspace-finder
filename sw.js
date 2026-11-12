@@ -1,5 +1,5 @@
-const CACHE='hyperspace-finder-2026-11-12-v6';
-const CORE=['./','./index.html','./styles.css','./app.js?v=6','./data/zones.json','./assets/icon.svg'];
+const CACHE='hyperspace-finder-2026-11-12-v7';
+const CORE=['./','./index.html','./styles.css?v=7','./app.js?v=7','./data/zones.json','./assets/icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()]));});
 self.addEventListener('fetch',event=>{
