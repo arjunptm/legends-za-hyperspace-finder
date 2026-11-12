@@ -313,8 +313,11 @@ function renderDiscovery(query){
     $('discoveryList').innerHTML=displayed.map(entry=>{
       const resultId=entry.resultIds[0];
       const description=entry.frequency;
-      if(mixed)return `<div class="discovery-entry"><strong>${escapeText(entry.label)}</strong><span>${escapeText(description)}</span></div>`;
-      return `<button class="discovery-entry" type="button" data-extra-result="${escapeText(resultId)}" title="Show zone details for ${escapeText(entry.label)}"><strong>${escapeText(entry.label)}</strong><span>${escapeText(description)}</span></button>`;
+      // Only the quick discovery summary is color coded; detail panels keep
+      // their exact source figures and neutral styling.
+      const tier=entry.support>=0.75?'most':entry.support>=0.4?'some':'few';
+      if(mixed)return `<div class="discovery-entry frequency-${tier}"><strong>${escapeText(entry.label)}</strong><span>${escapeText(description)}</span></div>`;
+      return `<button class="discovery-entry frequency-${tier}" type="button" data-extra-result="${escapeText(resultId)}" title="Show zone details for ${escapeText(entry.label)}"><strong>${escapeText(entry.label)}</strong><span>${escapeText(description)}</span></button>`;
     }).join('');
   }
   const button=$('discoveryMore');
