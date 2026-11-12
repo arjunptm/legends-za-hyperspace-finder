@@ -56,7 +56,8 @@ test('compact interface presents missing spawn options and preserves selected re
   assert.match(mixedHtml,/compatible source pattern/);
   assert.match(globalThis.location.href,/type2=normal/);
   assert.match(els.get('resultCount').textContent,/star rating/);
-  assert.match(els.get('discoveryList').innerHTML,/source pattern/);
+  assert.match(els.get('discoveryList').innerHTML,/In (most|some|a few) possibilities/);
+  assert.doesNotMatch(els.get('discoveryList').innerHTML,/source pattern|cluster/i);
   // Three tentative Normal combinations reveal different hidden encounters.
   els.get('pokemon1').value='Furfrou';
   els.get('pokemon2').value='Pidgeotto';
@@ -68,7 +69,7 @@ test('compact interface presents missing spawn options and preserves selected re
   assert.match(els.get('resultCount').textContent,/3 combinations/);
   const other=els.get('discoveryList').innerHTML;
   for(const name of ['Kangaskhan','Drampa','Kecleon']) assert.match(other,new RegExp(name));
-  assert.match(other,/1 of 3 combinations/);
+  assert.match(other,/In a few possibilities/);
   els.get('discoveryList').handlers.get('click')({target:{closest:()=>({dataset:{extraResult:'NORMAL-034'}})}});
   assert.match(els.get('zoneDetails').innerHTML,/Normal Wild Zone #4/);
   assert.match(globalThis.location.href,/zone=NORMAL-034/);
