@@ -112,3 +112,15 @@ Commit the generated `app.js` alongside source changes. The script reference in
 script from a service-worker cache. When changing app versions, increment the
 query string and the `CACHE` version in `sw.js` together. The page now displays
 an explicit startup error instead of retaining "Loading encounter data" forever.
+
+## Simple discovery summary
+
+The **top** “Other possible Pokémon” list is simplified for quick decisions.
+It merges cosmetic forms of the same species, prioritizes species that recur in
+more matching possibilities, and uses plain-language summaries (“In most
+possibilities”, “In some possibilities”, “In a few possibilities”). Those labels
+are **not in-game spawn odds**: mixed-type source selection probabilities are
+unknown. Explicit regional forms retain distinct names.
+
+The selected-zone details beneath the summary remain fully numerical: original
+rarities, levels, Alpha rates, source counts, and warnings are unchanged.
