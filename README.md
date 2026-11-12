@@ -124,3 +124,20 @@ unknown. Explicit regional forms retain distinct names.
 
 The selected-zone details beneath the summary remain fully numerical: original
 rarities, levels, Alpha rates, source counts, and warnings are unchanged.
+
+
+## Phone layout and quick-scan colors
+
+The page includes a viewport meta tag, so phone browsers use responsive CSS
+instead of shrinking the desktop interface. At narrow widths the preview
+inputs and filters form two columns, candidate zones scroll horizontally,
+and the detail view follows underneath. Inputs are 16px to avoid iOS auto zoom.
+
+Only the top **Other possible Pokémon** cards use color:
+- Green = **In most possibilities** (appears in at least 75% of relevant source records)
+- Blue = **In some possibilities** (40% to under 75%)
+- Sand = **In a few possibilities** (under 40%)
+
+These percentages determine labels, **not spawn probabilities**. All detailed
+spawn rates and source information remain unchanged. Run `node --test tests/*.test.mjs`
+and check at 320px, 390px and desktop browser widths.
