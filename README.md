@@ -12,7 +12,7 @@ Static, GitHub Pages-compatible frontend for identifying Hyperspace Wild Zone co
    ```
 
 3. Visit <http://localhost:8000>. Avoid double-clicking `index.html` because `file://` browsers block `fetch()` of local JSON.
-4. Hit **Try an example**: the input `Patrat`, `Bunnelby`, `Buneary`, Normal, 2 stars includes zone `NORMAL-011`. The first preview Pokémon isn't the Serebii focus representative, so this checks that cluster-member matching works.
+4. Select **Load example** to populate `Alolan Raichu`, `Flaaffy`, `Ampharos`, Electric, 4 stars. The selected possible match is `ELECTRIC-030`; other listed Pokémon include regular Raichu, Eelektrik, and Eelektross.
 
 ## Publish on GitHub Pages
 
@@ -35,6 +35,12 @@ For images, the website **supports optional local image references**, but none a
 
 **Do not publish your entire Google Drive folder**, private notes, or API credentials. Only the site files and curated data belong in the repository.
 
+## Compact interface
+
+The page uses a single, dense search/results workspace: observed Pokémon and filters across the top, matching combinations in a scrollable list, and the selected zone on the right. **Other possible Pokémon** are listed first; the three full spawn clusters and within-cluster rates appear underneath. The result list scrolls independently on desktop and horizontally on narrow screens. There are no promotional headings, decorative badges, or required multi-page navigation.
+
+Selecting a combination preserves its zone ID in the shareable URL. Search inputs and results are updated immediately without a submit button. The site remains text-first, but the source JSON retains form keys for later image support.
+
 ## Matching rules
 
 - **Confirmed matches** assign preview Pokémon to different documented spawn clusters, in any order. **Possible shared-cluster matches** include cases where all entered species/forms exist in the zone but two belong to the same cluster. Such cases are clearly labeled as tentative.
@@ -51,7 +57,7 @@ For images, the website **supports optional local image references**, but none a
 Requires Node.js, but only for tests (not for hosting):
 
 ```powershell
-node --test tests\matcher.test.mjs
+node --test tests\*.test.mjs
 ```
 
 Data snapshot: 507 combinations, 467 matched, 33 warnings, 7 Special incomplete, 2,533 spawn records. Original encounter information: [Serebii Hyperspace Lumiose](https://www.serebii.net/legendsz-a/hyperspacelumiose.shtml).

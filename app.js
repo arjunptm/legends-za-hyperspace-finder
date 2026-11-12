@@ -1,124 +1,96 @@
-import {normName, displayName, searchZones} from './matcher.mjs';
+import {normName, displayName, matchesMember, searchZones} from './matcher.mjs';
 
 const $ = (id) => document.getElementById(id);
 const inputs=[$('pokemon1'),$('pokemon2'),$('pokemon3')];
 const typeInput=$('zoneType'), starInput=$('starRating');
-const list=$('resultsList'), summary=$('resultSummary'), more=$('loadMore');
-let zones=[];
-let names=[];
-let results=[];
-let visible=18;
-let toastTimeout=null;
+const list=$('resultsList'), detail=$('zoneDetails'), summary=$('resultSummary');
+let zones=[], names=[], results=[], selectedId=null, toastTimeout=null;
 const TYPES=['normal','fighting','flying','poison','ground','rock','bug','ghost','steel','fire','water','grass','electric','psychic','ice','dragon','dark','fairy','special'];
 const escapeText=(s)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const title=(s)=>s ? s.charAt(0).toUpperCase()+s.slice(1) : '';
-const range=(bounds)=>Array.isArray(bounds)&&bounds[0]!=null&&bounds[1]!=null ? (bounds[0]===bounds[1]?String(bounds[0]):`${bounds[0]}–${bounds[1]}`) : 'n/a';
-const percent=(n)=>n==null?'—':`${Number.isInteger(Number(n))?Number(n):Number(n).toFixed(1)}%`;
-const safeSource=(url)=>/^https:\/\/www\.serebii\.net\//.test(url||'') ? url : 'https://www.serebii.net/legendsz-a/hyperspacelumiose.shtml';
-const srcImage=(path)=>typeof path==='string' && /^assets\/pokemon\/[\w.-]+$/.test(path) ? `./${path}` : '';
+const title=s=>s ? s[0].toUpperCase()+s.slice(1) : '';
+const range=pair=>Array.isArray(pair)&&pair[0]!=null&&pair[1]!=null?(pair[0]===pair[1]?String(pair[0]):`${pair[0]}–${pair[1]}`):'—';
+const percent=n=>n==null?'—':`${Number.isInteger(Number(n))?Number(n):Number(n).toFixed(1)}%`;
+const safeSource=url=>/^https:\/\/www\.serebii\.net\//.test(url||'')?url:'https://www.serebii.net/legendsz-a/hyperspacelumiose.shtml';
+const uniqueMembers=members=>[...new Map(members.map(m=>[normName(displayName(m))+'|'+(m.form||''),m])).values()];
 
 function getQuery(){return {previews:inputs.map(x=>x.value.trim()),type:typeInput.value,star:starInput.value};}
-function toast(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>{el.hidden=true},2500);}
-function syncUrl(){const {previews,type,star}=getQuery();const url=new URL(window.location.href);url.search='';previews.forEach((s,i)=>{if(s)url.searchParams.set(`p${i+1}`,s)});if(type!=='all')url.searchParams.set('type',type);if(star!=='all')url.searchParams.set('star',star);history.replaceState(null,'',url);}
-function restoreQuery(){const query=new URLSearchParams(window.location.search);inputs.forEach((inp,i)=>{inp.value=query.get(`p${i+1}`)||''});const type=query.get('type');if(type&&[...typeInput.options].some(o=>o.value===type))typeInput.value=type;const star=query.get('star');if(star&&[...starInput.options].some(o=>o.value===star))starInput.value=star;}
-function buildMember(m,selected){
-  const selectedClass=(selected.has(normName(m.name))||selected.has(normName(displayName(m))))?' selected':'';
-  const icon=srcImage(m.image);
-  const avatar=icon?`<img loading="lazy" src="${escapeText(icon)}" alt="" />`:escapeText((m.name||'?').slice(0,1));
-  // Form keys are unambiguous in the importer even when names repeat.
-  const form=m.hasSameNameForm?`<div class="member-form">Form: ${escapeText(m.form||'unspecified')}</div>`:'';
-  return `<div class="member${selectedClass}"><span class="member-art">${avatar}</span><div class="member-copy"><div class="member-name">${escapeText(displayName(m))}</div>${form}<div class="member-meta">Lv. ${escapeText(range(m.level))} · Alpha ${percent(m.alpha)} · Alpha Lv. ${escapeText(range(m.alphaLevel))}</div></div><span class="member-percent">${percent(m.rarity)}</span></div>`;
+function observed(member,previews){return previews.some(p=>p&&matchesMember(member,p));}
+function extraMembers(zone,previews){return uniqueMembers((zone.status==='possible'?zone.unassigned:zone.groups.flatMap(g=>(g.members||[]).map(m=>({...m,slot:g.slot}))))||[]).filter(m=>!observed(m,previews));}
+function toast(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.hidden=true,2500);}
+function syncUrl(){const {previews,type,star}=getQuery(),url=new URL(location.href);url.search='';previews.forEach((p,i)=>{if(p)url.searchParams.set(`p${i+1}`,p)});if(type!=='all')url.searchParams.set('type',type);if(star!=='all')url.searchParams.set('star',star);if(selectedId)url.searchParams.set('zone',selectedId);history.replaceState(null,'',url);}
+function restoreQuery(){const q=new URLSearchParams(location.search);inputs.forEach((inp,i)=>inp.value=q.get(`p${i+1}`)||'');const type=q.get('type'),star=q.get('star');if(type&&[...typeInput.options].some(o=>o.value===type))typeInput.value=type;if(star&&[...starInput.options].some(o=>o.value===star))starInput.value=star;selectedId=q.get('zone');}
+function matchLabel(quality){return {matched:'Compatible',warning:'Warning',pool:'Possible – shared cluster',possible:'Possible – incomplete'}[quality]||'Unknown';}
+function extraPreview(zone,previews){const names=extraMembers(zone,previews).map(displayName);return names.length?`Other: ${names.slice(0,4).join(', ')}${names.length>4?` +${names.length-4}`:''}`:'No other listed Pokémon';}
+function renderCandidates(query){
+  $('candidateCount').textContent=results.length?String(results.length):'';
+  if(!results.length){list.innerHTML='<div class="placeholder">No combinations</div>';return;}
+  list.innerHTML=results.map(r=>{
+    const z=r.zone,active=z.id===selectedId;
+    return `<button class="candidate" type="button" data-zone="${escapeText(z.id)}" aria-pressed="${active}">
+      <span class="candidate-top"><span class="candidate-name">${escapeText(title(z.type))} · Zone #${z.number}</span><span class="candidate-star">${z.star}★</span></span>
+      <span class="candidate-bottom">${escapeText(matchLabel(r.quality))}</span>
+      <span class="candidate-extra">${escapeText(extraPreview(z,query.previews))}</span>
+    </button>`;
+  }).join('');
 }
-function clusterHtml(group,zone,selected,matchedSlots){
-  const assigned=matchedSlots.has(group.slot);
-  const values=group.members||[];
-  const formCounts=new Map();values.forEach(m=>formCounts.set(normName(m.name),(formCounts.get(normName(m.name))||0)+1));
-  const items=values.map(m=>buildMember({...m,hasSameNameForm:formCounts.get(normName(m.name))>1},selected)).join('');
-  return `<section class="cluster${assigned?' cluster-preview':''}"><div class="cluster-head"><strong>Cluster ${group.slot}</strong><span>${assigned?'✓ Preview matched':`${values.length} possible spawn${values.length!==1?'s':''}`}</span></div>${items||'<p class="member-unknown">No spawn information.</p>'}</section>`;
+function memberHtml(m,previews){
+  const seen=observed(m,previews);
+  return `<div class="member${seen?' observed':''}"><div class="member-top"><span class="member-name">${escapeText(displayName(m))}${seen?'<span class="observed-indicator">Observed</span>':''}</span><span class="member-percent">${percent(m.rarity)}</span></div><div class="member-meta">Lv ${escapeText(range(m.level))} · Alpha ${percent(m.alpha)} (Lv ${escapeText(range(m.alphaLevel))})</div></div>`;
 }
-function zoneCard(result,index,query){
-  const z=result.zone;
-  const isPossible=result.quality==='possible';
-  const isPool=result.quality==='pool';
-  const isWarning=result.quality==='warning';
-  const state=isPossible?'Possible match':isPool?'Possible · shared cluster':isWarning?'Match with warning':'Compatible match';
-  const label=(isPossible||isPool)?'possible':isWarning?'warning':'';
-  const chosen=new Set(query.previews.map(normName).filter(Boolean));
-  const slots=new Set(result.slots);
-  const source=safeSource(z.source);
-  const stars=Number(z.star)?'★'.repeat(Math.min(Number(z.star),5)):'—';
-  const info=`${Number(z.star)}-star ${title(z.type)} source category · Zone #${z.number}`;
-  let body;
-  if(!isPossible){
-    body=`<div class="group-grid">${z.groups.map(g=>clusterHtml(g,z,chosen,slots)).join('')}</div>`;
-  } else {
-    const unique=new Map();(z.unassigned||[]).forEach(m=>{const key=normName(m.name)+'_'+m.form;if(!unique.has(key))unique.set(key,m)});
-    const possible=[...unique.values()];
-    body=`<p class="source-note">Pokémon recorded for this zone (preview-slot assignment is unknown):</p><div class="uncertain-list">${possible.slice(0,22).map(m=>`<span class="uncertain-name">${escapeText(m.name)}</span>`).join('')}${possible.length>22?`<span class="uncertain-name">+${possible.length-22} more</span>`:''}</div>`;
-  }
-  const poolNote=isPool?'<div class="issue possible"><strong>Shared cluster:</strong> Every Pokémon is listed for this zone, but two previews belong to the same documented spawn cluster. This is a possible match, not a confirmed focus-slot assignment.</div>':'';
-  const warning= z.warnings?.length?`<div class="issue${isPossible?' possible':''}"><strong>${isPossible?'Incomplete source:':'Source note:'}</strong> ${escapeText(z.warnings.join(' · '))}</div>`:'';
-  return `<details class="zone-card" ${index===0?'open':''}><summary><div><div class="zone-topline"><span class="zone-title">${escapeText(title(z.type))} Wild Zone <span class="zone-id">#${escapeText(z.number)}</span></span><span class="zone-state ${label}">${state}</span></div><div class="zone-subline"><span class="type-chip">${escapeText(title(z.type))}</span><span class="zone-stars" title="${Number(z.star)} stars">${stars}</span><span>·</span><span>${escapeText(z.id)}</span></div></div><span class="card-right"><span class="preview-match">${isPossible?`${result.hitCount} preview${result.hitCount!==1?'s':''} listed`:`${result.hitCount} preview${result.hitCount!==1?'s':''} matched`}</span><span class="card-chevron" aria-hidden="true">⌄</span></span></summary><div class="zone-body"><div class="source-details"><a target="_blank" rel="noopener noreferrer" href="${escapeText(source)}">View on Serebii ↗</a><span>${escapeText(info)}</span></div>${body}${poolNote}${warning}<p class="source-note">Rarity is conditional within its cluster. Image/form variants and source percentages are preserved as listed.</p></div></details>`;
+function clusterHtml(group,previews){
+  const n=(group.members||[]).filter(m=>observed(m,previews)).length;
+  return `<section class="cluster"><div class="cluster-head"><strong>Cluster ${group.slot}</strong><span>${n?`${n} observed`:`${(group.members||[]).length} spawn${group.members.length===1?'':'s'}`}</span></div>${(group.members||[]).map(m=>memberHtml(m,previews)).join('')}</section>`;
+}
+function renderDetail(query){
+  const match=results.find(r=>r.zone.id===selectedId);
+  if(!match){detail.innerHTML='<div class="placeholder">Enter observed Pokémon to see the other possible spawns.</div>';return;}
+  const z=match.zone,extras=extraMembers(z,query.previews);
+  const extraHtml=extras.length?`<div class="extra-grid">${extras.map(m=>`<div class="extra-entry"><div class="extra-name">${escapeText(displayName(m))}</div><div class="extra-meta">${percent(m.rarity)} in cluster${m.slot?` ${m.slot}`:''} · Lv ${escapeText(range(m.level))}</div></div>`).join('')}</div>`:'<div class="extras-none">No other Pokémon listed for this combination.</div>';
+  const hasGroups=z.status!=='possible'&&z.groups?.length===3;
+  const body=hasGroups?`<section class="cluster-section"><div class="detail-caption">Full spawn list by cluster</div><div class="cluster-grid">${z.groups.map(g=>clusterHtml(g,query.previews)).join('')}</div></section>`:
+    `<section class="cluster-section"><div class="detail-caption">Recorded spawns (cluster assignment unknown)</div><div class="unassigned-grid">${uniqueMembers(z.unassigned||[]).map(m=>`<div class="extra-entry"><div class="extra-name">${escapeText(displayName(m))}</div><div class="extra-meta">${percent(m.rarity)} · Lv ${escapeText(range(m.level))}</div></div>`).join('')}</div></section>`;
+  let caution='';
+  if(match.quality==='pool')caution='<div class="warning-note">All observed Pokémon are listed, but at least two share one documented cluster. This is a possible combination, not a confirmed preview-slot match.</div>';
+  if(match.quality==='possible')caution='<div class="warning-note">Special-zone preview clusters are incomplete. This is a possible candidate only.</div>';
+  if(z.warnings?.length)caution+=`<div class="warning-note">${escapeText(z.warnings.join(' · '))}</div>`;
+  detail.innerHTML=`<div class="detail-head"><div><h3>${escapeText(title(z.type))} Wild Zone #${z.number} · ${z.star}★</h3><div class="detail-meta">${escapeText(z.id)} · <span class="status${match.quality==='pool'||match.quality==='possible'||match.quality==='warning'?' caution':''}">${escapeText(matchLabel(match.quality))}</span></div></div><a class="detail-link" href="${escapeText(safeSource(z.source))}" target="_blank" rel="noopener noreferrer">Serebii source</a></div>
+    <section class="extra-section"><div class="extra-title"><div class="detail-caption">Other possible Pokémon</div><span>${extras.length} not in your preview</span></div>${extraHtml}</section>${body}${caution}`;
 }
 function render(){
-  const query=getQuery();
-  const valid=query.previews.map(x=>normName(x)).filter(Boolean);
-  const known=new Set(names.map(normName));
-  const unknown=query.previews.filter(x=>x.trim()&&!known.has(normName(x)));
-  $('resultsTitle').textContent=valid.length?'Potential combinations':'Ready when you are';
-  if(!zones.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">✦</div><h3>Loading encounter data…</h3><p>All search calculations happen right here on your device.</p></div>';return;}
-  if(!valid.length){
-    results=[];
-    $('resultCount').textContent='';summary.innerHTML='';
-    list.innerHTML='<div class="empty-state"><div class="empty-icon">✦</div><h3>Start with a Pokémon</h3><p>Enter one, two, or three Pokémon from the portal preview—or tap “Try an example” to see a complete result.</p></div>';
-    more.hidden=true;return;
-  }
-  if(unknown.length){
-    results=[];$('resultCount').textContent='';summary.innerHTML='';
-    list.innerHTML=`<div class="empty-state"><div class="empty-icon">⌕</div><h3>Check the Pokémon name</h3><p>${escapeText(unknown.join(', '))} ${unknown.length===1?'is not in':'are not in'} the extracted encounter list. Choose a name from the suggestions to continue.</p></div>`;
-    more.hidden=true;return;
+  const query=getQuery(),valid=query.previews.map(normName).filter(Boolean),known=new Set(names.map(normName));
+  const unknown=query.previews.filter(x=>x&&!known.has(normName(x)));
+  if(!zones.length){detail.innerHTML='<div class="placeholder">Loading encounter data…</div>';return;}
+  if(!valid.length||unknown.length){
+    results=[];selectedId=null;$('resultCount').textContent='';summary.textContent='';
+    renderCandidates(query);
+    detail.innerHTML=`<div class="placeholder">${unknown.length?`Not in the encounter list: ${escapeText(unknown.join(', '))}. Select a listed name.`:'Enter observed Pokémon to see matching zones and other possible spawns.'}</div>`;
+    return;
   }
   results=searchZones(zones,query);
-  $('resultCount').textContent=`${results.length} combination${results.length===1?'':'s'}`;
-  const a=results.filter(x=>x.quality==='matched').length,b=results.filter(x=>x.quality==='warning').length,c=results.filter(x=>x.quality==='possible').length,d=results.filter(x=>x.quality==='pool').length;
-  summary.innerHTML=`<div class="summary-stat"><strong>${a}</strong> compatible matches</div><div class="summary-stat warn"><strong>${b}</strong> with source warnings</div><div class="summary-stat possible"><strong>${d}</strong> shared-cluster possibilities</div><div class="summary-stat possible"><strong>${c}</strong> tentative Special candidates</div>`;
-  if(!results.length){
-    list.innerHTML=`<div class="empty-state"><div class="empty-icon">⌕</div><h3>No compatible combination found</h3><p>No zone in the selected category and star rating contains all of these Pokémon in its known spawn pool. Try removing a filter. Special zones have incomplete data and cannot always be ruled out.</p></div>`;
-    more.hidden=true;return;
-  }
-  list.innerHTML=results.slice(0,visible).map((r,i)=>zoneCard(r,i,query)).join('');
-  more.hidden=results.length<=visible;
-  more.textContent=`Show more combinations (${results.length-visible} remaining)`;
-  for (const img of list.querySelectorAll('.member-art img')){
-    img.addEventListener('error',()=>{img.replaceWith(document.createTextNode('?'))},{once:true});
-  }
+  if(!results.some(r=>r.zone.id===selectedId))selectedId=results[0]?.zone.id??null;
+  const n={matched:0,warning:0,pool:0,possible:0};results.forEach(r=>n[r.quality]++);
+  $('resultCount').textContent=`${results.length} ${results.length===1?'combination':'combinations'}`;
+  summary.innerHTML=`<span><strong>${n.matched}</strong> compatible</span><span><strong>${n.warning}</strong> warnings</span><span><strong>${n.pool}</strong> shared-cluster</span><span><strong>${n.possible}</strong> incomplete</span>`;
+  renderCandidates(query);
+  if(results.length)renderDetail(query);
+  else detail.innerHTML='<div class="placeholder">No listed combinations match these Pokémon and filters. Try a different star rating or type. Mixed-type zone assembly is not included.</div>';
 }
-function onChange(){visible=18;syncUrl();render()}
+function onChange(){render();syncUrl();}
 async function init(){
-  for(const type of TYPES){const option=document.createElement('option');option.value=type;option.textContent=title(type);typeInput.append(option)}
+  for(const type of TYPES){const option=document.createElement('option');option.value=type;option.textContent=title(type);typeInput.append(option);}
   try{
-    const response=await fetch('./data/zones.json',{cache:'no-cache'});
-    if(!response.ok)throw new Error(`HTTP ${response.status}`);
-    const downloaded=await response.json();
-    if(!Array.isArray(downloaded)||downloaded.length!==507)throw new Error('Unexpected encounter database structure');
-    zones=downloaded;
+    const response=await fetch('./data/zones.json',{cache:'no-cache'});if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    zones=await response.json();if(!Array.isArray(zones)||zones.length!==507)throw new Error('Unexpected encounter data');
     names=[...new Set(zones.flatMap(z=>[...(z.groups||[]).flatMap(g=>g.members||[]),...(z.unassigned||[])].flatMap(m=>[m.name,displayName(m)])))].sort((a,b)=>a.localeCompare(b));
-    const namesList=$('pokemonNames');
-    for(const name of names){const option=document.createElement('option');option.value=name;namesList.appendChild(option)}
-    $('datasetStatus').innerHTML='<span class="dot"></span> 507 zones · 2,533 spawn records';
-    restoreQuery();
-    for (const input of [...inputs,typeInput,starInput]) input.addEventListener('input',onChange);
-    $('clearButton').addEventListener('click',()=>{inputs.forEach(x=>x.value='');typeInput.value='all';starInput.value='all';onChange();inputs[0].focus()});
-    $('sampleButton').addEventListener('click',()=>{inputs.forEach((x,i)=>x.value=['Patrat','Bunnelby','Buneary'][i]);typeInput.value='normal';starInput.value='2';onChange();document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'})});
-    $('shareButton').addEventListener('click',async()=>{syncUrl();try{await navigator.clipboard.writeText(location.href);toast('Search link copied!')}catch{toast('Copy the page URL to share this search.')}});
-    more.addEventListener('click',()=>{visible+=18;render();});
+    const namesList=$('pokemonNames');for(const name of names){const option=document.createElement('option');option.value=name;namesList.appendChild(option);}
+    $('datasetStatus').textContent='507 zones · 2,533 spawn records';
+    restoreQuery();for(const input of [...inputs,typeInput,starInput])input.addEventListener('input',onChange);
+    $('clearButton').addEventListener('click',()=>{inputs.forEach(x=>x.value='');typeInput.value='all';starInput.value='all';selectedId=null;onChange();inputs[0].focus();});
+    $('sampleButton').addEventListener('click',()=>{['Alolan Raichu','Flaaffy','Ampharos'].forEach((x,i)=>inputs[i].value=x);typeInput.value='electric';starInput.value='4';selectedId=null;onChange();});
+    $('shareButton').addEventListener('click',async()=>{syncUrl();try{await navigator.clipboard.writeText(location.href);toast('Search link copied.');}catch{toast('Copy the browser URL to share.');}});
+    list.addEventListener('click',event=>{const button=event.target.closest('button[data-zone]');if(!button)return;selectedId=button.dataset.zone;renderCandidates(getQuery());renderDetail(getQuery());syncUrl();});
     render();
-  }catch(error){
-    console.error(error);$('datasetStatus').textContent='Encounter data unavailable';
-    list.innerHTML=`<div class="empty-state"><div class="empty-icon">!</div><h3>Could not load encounter data</h3><p>Try refreshing the page. If you're opening the HTML directly from a folder, run a local server instead (see README).</p></div>`;
-  }
+  }catch(error){console.error(error);$('datasetStatus').textContent='Data unavailable';detail.innerHTML='<div class="placeholder">Could not load encounter data. Refresh the page. Local files require an HTTP server rather than file://.</div>';}
 }
 init();
-if('serviceWorker' in navigator && window.location.protocol==='https:'){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
-}
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
