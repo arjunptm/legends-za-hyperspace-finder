@@ -94,3 +94,21 @@ Run `node --test tests/*.test.mjs` to verify all matching and UI smoke tests.
 The results page now **lists additional possible Pokémon across all candidate source combinations before the combination list**. For example, a Normal 4-star search with Furfrou, Pidgeotto, and Pidgeot displays Drampa, Kangaskhan, and Kecleon together. Each entry indicates in how many candidate combinations it appears. For single-type searches, selecting an entry opens an associated source combination; mixed-type entries are informational because their exact source combinations are inferred.
 
 This is a **union of candidates, not a guarantee that all are present together**. A count of 1/3 means one of three matching source combinations lists it; it is not a 33% spawn chance. For mixed-type matches, counts refer to the number of independently compatible source patterns, and the output is inferred rather than a verified assembled zone. The list is initially limited to 12 entries when there are many possibilities; you can expand it without changing search criteria.
+
+## Browser startup and JavaScript updates
+
+The GitHub Pages entrypoint `app.js` is a generated, self-contained classic script to
+avoid cross-deployment module dependency failures and stale import caches. Its
+sources are `matcher.mjs`, `discovery.mjs`, and `app-main.js`. After editing any
+source file, run:
+
+```powershell
+python tools/build_app.py
+node --test tests/*.test.mjs
+```
+
+Commit the generated `app.js` alongside source changes. The script reference in
+`index.html` uses a version query string to avoid serving an incompatible older
+script from a service-worker cache. When changing app versions, increment the
+query string and the `CACHE` version in `sw.js` together. The page now displays
+an explicit startup error instead of retaining "Loading encounter data" forever.
